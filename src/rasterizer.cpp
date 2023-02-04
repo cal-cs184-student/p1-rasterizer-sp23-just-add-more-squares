@@ -71,6 +71,21 @@ namespace CGL {
     float x2, float y2,
     Color color) {
     // TODO: Task 1: Implement basic triangle rasterization here, no supersampling
+    float min_x = floor(min(x0, min(x1, x2))) + 0.5;
+    float max_x = ceil(max(x0, max(x1, x2))) + 0.5;
+    float min_y = floor(min(y0, min(y1, y2))) + 0.5;
+    float max_y = ceil(max(y0, max(y1, y2))) + 0.5;
+
+    for (float x = min_x; x < max_x; x++) {
+      for (float y = min_y; y < max_y; y++) {
+        float alpha = ((y1 - y2)*(x - x2) + (x2 - x1)*(y - y2)) / ((y1 - y2)*(x0 - x2) + (x2 - x1)*(y0 - y2));
+        float beta = ((y2 - y0)*(x - x2) + (x0 - x2)*(y - y2)) / ((y1 - y2)*(x0 - x2) + (x2 - x1)*(y0 - y2));
+        float gamma = 1 - alpha - beta;
+        if (alpha >= 0 && beta >= 0 && gamma >= 0) {
+          fill_pixel(x, y, color);
+        }
+      }
+    }
 
     // TODO: Task 2: Update to implement super-sampled rasterization
 
