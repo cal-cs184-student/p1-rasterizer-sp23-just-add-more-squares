@@ -65,6 +65,24 @@ namespace CGL {
     }
   }
 
+  bool inside_triangle_side(float Xi, float Yi,
+                            float dXi, float dYi,
+                            float x, float y) {
+    return -(x - Xi) * dYi + (y - Yi) * dXi >= 0;
+  }
+
+  bool inside_triangle(float X0, float Y0,
+                       float X1, float Y1,
+                       float X2, float Y2,
+                       float x, float y) {
+    float dX0 = X1 - X0, dY0 = Y1 - Y0;
+    float dX1 = X2 - X1, dY1 = Y2 - Y1;
+    float dX2 = X0 - X2, dY2 = Y0 - Y2;
+    bool L0 = inside_triangle_side(X0, Y0, dX0, dY0, x, y);
+    return L0 == inside_triangle_side(X1, Y1, dX1, dY1, x, y)
+        && L0 == inside_triangle_side(X2, Y2, dX2, dY2, x, y);
+  }
+
   // Rasterize a triangle.
   void RasterizerImp::rasterize_triangle(float x0, float y0,
     float x1, float y1,
@@ -72,17 +90,14 @@ namespace CGL {
     Color color) {
     // TODO: Task 1: Implement basic triangle rasterization here, no supersampling
     float min_x = floor(min(x0, min(x1, x2))) + 0.5;
-    float max_x = ceil(max(x0, max(x1, x2))) + 0.5;
+    float max_x = ceil(max(x0, max(x1, x2))) - 0.5;
     float min_y = floor(min(y0, min(y1, y2))) + 0.5;
-    float max_y = ceil(max(y0, max(y1, y2))) + 0.5;
+    float max_y = ceil(max(y0, max(y1, y2))) - 0.5;
 
-    for (float x = min_x; x < max_x; x++) {
-      for (float y = min_y; y < max_y; y++) {
-        float alpha = ((y1 - y2)*(x - x2) + (x2 - x1)*(y - y2)) / ((y1 - y2)*(x0 - x2) + (x2 - x1)*(y0 - y2));
-        float beta = ((y2 - y0)*(x - x2) + (x0 - x2)*(y - y2)) / ((y1 - y2)*(x0 - x2) + (x2 - x1)*(y0 - y2));
-        float gamma = 1 - alpha - beta;
-        if (alpha >= 0 && beta >= 0 && gamma >= 0) {
-          fill_pixel(x, y, color);
+    for (float x = min_x; x <= max_x; x++) {
+      for (float y = min_y; y <= max_y; y++) {
+        if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
+          rasterize_point(x, y, color);
         }
       }
     }
