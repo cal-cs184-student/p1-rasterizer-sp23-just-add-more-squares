@@ -22,8 +22,13 @@ namespace CGL {
     // NOTE: You are not required to implement proper supersampling for points and lines
     // It is sufficient to use the same color for all supersamples of a pixel for points and lines (not triangles)
 
-
-    sample_buffer[y * width + x] = c;
+    int super_x = x * sqrt(sample_rate);
+    int super_y = y * sqrt(sample_rate);
+    for (int i = super_x; i < super_x + sqrt(sample_rate); i++) {
+      for (int j = super_y; j < super_y + sqrt(sample_rate); j++) {
+        sample_buffer[j * width * sqrt(sample_rate) + i] = c;
+      }
+    }
   }
 
   // Rasterize a point: simple example to help you start familiarizing
@@ -103,35 +108,23 @@ namespace CGL {
 //    }
 
     // TODO: Task 2: Update to implement super-sampled rasterization
-    double step = 1.0 / (sqrt(this->sample_rate));
-    int min_x = floor(min(x0, min(x1, x2))) - 1;
-    int max_x = ceil(max(x0, max(x1, x2))) + 1;
-    int min_y = floor(min(y0, min(y1, y2))) - 1;
-    int max_y = ceil(max(y0, max(y1, y2))) + 1;
+    float step = 1.0 / sqrt(sample_rate);
+    float min_x = floor(min(x0, min(x1, x2))) + 0.5 * step;
+    float max_x = ceil(max(x0, max(x1, x2))) - 0.5 * step;
+    float min_y = floor(min(y0, min(y1, y2))) + 0.5 * step;
+    float max_y = ceil(max(y0, max(y1, y2))) - 0.5 * step;
 
-    int iters = round(sqrt(this->sample_rate));
-    for (int i = min_x; i <= max_x; i++) {
-      for (int j = min_y; j <= max_y; j++) {
-        Color c = Color(0, 0, 0);
-        bool inside = false;
-        for (int x = 0; x < iters; x++) {
-          for (int y = 0; y < iters; y++) {
-            int u = i + (x * step) + (step / 2);
-            int v = j + (y * step) + (step / 2);
-            if (inside_triangle(x0, y0, x1, y1, x2, y2, u, v)) {
-              inside = true;
-              c += color * (1.0 / this->sample_rate);
-            } else {
-              c += Color::White * (1.0 / this->sample_rate);
-            }
-          }
-        }
-        double center_x = i, center_y = j;
-        if (inside) {
-          rasterize_point(center_x, center_y, c);
+    for (float x = min_x; x <= max_x; x += step) {
+      for (float y = min_y; y <= max_y; y += step) {
+        if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
+          int i = round((x - 0.5 * step) / step);
+          int j = round((y - 0.5 * step) / step);
+          sample_buffer[j * width * sqrt(sample_rate) + i] = color;
         }
       }
     }
+
+
   }
 
 
@@ -163,8 +156,11 @@ namespace CGL {
 
   void RasterizerImp::set_sample_rate(unsigned int rate) {
     // TODO: Task 2: You may want to update this function for supersampling support
+
     this->sample_rate = rate;
-    this->sample_buffer.resize(width * height, Color::White);
+
+
+    this->sample_buffer.resize(width * height * rate, Color::White);
   }
 
 
@@ -178,7 +174,7 @@ namespace CGL {
     this->rgb_framebuffer_target = rgb_framebuffer;
 
 
-    this->sample_buffer.resize(width * height, Color::White);
+    this->sample_buffer.resize(width * height * this->sample_rate, Color::White);
   }
 
 
@@ -199,10 +195,16 @@ namespace CGL {
 
     for (int x = 0; x < width; ++x) {
       for (int y = 0; y < height; ++y) {
-        Color col = sample_buffer[y * width + x];
-
+        Color avg = Color(0, 0, 0);
+        int super_x = x * sqrt(sample_rate);
+        int super_y = y * sqrt(sample_rate);
+        for (int i = super_x; i < super_x + sqrt(sample_rate); i++) {
+          for (int j = super_y; j < super_y + sqrt(sample_rate); j++) {
+            avg += (1.0 / sample_rate) * sample_buffer[j * width * sqrt(sample_rate) + i];
+          }
+        }
         for (int k = 0; k < 3; ++k) {
-          this->rgb_framebuffer_target[3 * (y * width + x) + k] = (&col.r)[k] * 255;
+          this->rgb_framebuffer_target[3 * (y * width + x) + k] = (&avg.r)[k] * 255;
         }
       }
     }
