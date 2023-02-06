@@ -127,17 +127,40 @@ namespace CGL {
 
   }
 
+    Vector3D barycentric(float x0, float y0,
+                         float x1, float y1,
+                         float x2, float y2,
+                         float x, float y) {
+      Matrix3x3 M = Matrix3x3(x0, x1, x2,
+                              y0, y1, y2,
+                              1, 1, 1);
+      return M.inv() * Vector3D(x, y, 1);
+    }
 
   void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Color c0,
     float x1, float y1, Color c1,
-    float x2, float y2, Color c2)
-  {
+    float x2, float y2, Color c2) {
     // TODO: Task 4: Rasterize the triangle, calculating barycentric coordinates and using them to interpolate vertex colors across the triangle
     // Hint: You can reuse code from rasterize_triangle
+    float step = 1.0 / sqrt(sample_rate);
+    float min_x = floor(min(x0, min(x1, x2))) + 0.5 * step;
+    float max_x = ceil(max(x0, max(x1, x2))) - 0.5 * step;
+    float min_y = floor(min(y0, min(y1, y2))) + 0.5 * step;
+    float max_y = ceil(max(y0, max(y1, y2))) - 0.5 * step;
 
-
-
+    for (float x = min_x; x <= max_x; x += step) {
+      for (float y = min_y; y <= max_y; y += step) {
+        if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
+          Vector3D params = barycentric(x0, y0, x1, y1, x2, y2, x, y);
+          int i = round((x - 0.5 * step) / step);
+          int j = round((y - 0.5 * step) / step);
+          Color color = params[0] * c0 + params[1] * c1 + params[2] * c2;
+          sample_buffer[j * width * sqrt(sample_rate) + i] = color;
+        }
+      }
+    }
   }
+
 
 
   void RasterizerImp::rasterize_textured_triangle(float x0, float y0, float u0, float v0,
@@ -149,9 +172,36 @@ namespace CGL {
     // TODO: Task 6: Set the correct barycentric differentials in the SampleParams struct.
     // Hint: You can reuse code from rasterize_triangle/rasterize_interpolated_color_triangle
 
+    const auto to_uv = [x0, y0, u0, v0,
+                  x1, y1, u1, v1,
+                  x2, y2, u2, v2](float x, float y) {
+      Vector2D uv0 = Vector2D(u0, v0);
+      Vector2D uv1 = Vector2D(u1, v1);
+      Vector2D uv2 = Vector2D(u2, v2);
+      Vector3D xy_barycentric = barycentric(x0, y0, x1, y1, x2, y2, x, y);
+      return uv0 * xy_barycentric[0] + uv1 * xy_barycentric[1] + uv2 * xy_barycentric[2];
+    };
 
 
+    SampleParams sp0 = SampleParams{to_uv(x0, y0),
+                                    to_uv(x0 + 1, y0),
+                                    to_uv(x0, y0 + 1),
+                                    psm, lsm};
+    SampleParams sp1 = SampleParams{to_uv(x1, y1),
+                                    to_uv(x1 + 1, y1),
+                                    to_uv(x1, y1 + 1),
+                                    psm, lsm};
+    SampleParams sp2 = SampleParams{to_uv(x2, y2),
+                                    to_uv(x2 + 1, y2),
+                                    to_uv(x2, y2 + 1),
+                                    psm, lsm};
+    Color c0 = tex.sample(sp0);
+    Color c1 = tex.sample(sp1);
+    Color c2 = tex.sample(sp2);
 
+    rasterize_interpolated_color_triangle(x0, y0, c0,
+                                          x1, y1, c1,
+                                          x2, y2, c2);
   }
 
   void RasterizerImp::set_sample_rate(unsigned int rate) {
