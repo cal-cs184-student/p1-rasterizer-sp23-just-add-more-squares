@@ -131,10 +131,10 @@ namespace CGL {
                          float x1, float y1,
                          float x2, float y2,
                          float x, float y) {
-      Matrix3x3 M = Matrix3x3(x0, x1, x2,
-                              y0, y1, y2,
-                              1, 1, 1);
-      return M.inv() * Vector3D(x, y, 1);
+      double alpha = (-(x - x1) * (y2 - y1) + (y - y1) * (x2 - x1)) / (-(x0 - x1) * (y2 - y1) + (y0 - y1) * (x2 - x1));
+      double beta = (-(x - x2) * (y0 - y2) + (y - y2) * (x0 - x2)) / (-(x1 - x2) * (y0 - y2) + (y1 - y2) * (x0 - x2));
+      double gamma = 1 - alpha - beta;
+      return Vector3D(alpha, beta, gamma);
     }
 
   void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Color c0,

@@ -24,7 +24,7 @@ namespace CGL {
       }
       int level_down = floor(level);
       int level_up = floor(level + 1);
-      int ratio = level - level_down;
+      float ratio = level - level_down;
       switch (sp.psm) {
         case P_NEAREST:
           return (1 - ratio) * sample_nearest(sp.p_uv, level_down)
