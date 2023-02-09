@@ -182,33 +182,32 @@ namespace CGL {
       return uv0 * xy_barycentric[0] + uv1 * xy_barycentric[1] + uv2 * xy_barycentric[2];
     };
 
+    float step = 1.0 / sqrt(sample_rate);
+    float min_x = floor(min(x0, min(x1, x2))) + 0.5 * step;
+    float max_x = ceil(max(x0, max(x1, x2))) - 0.5 * step;
+    float min_y = floor(min(y0, min(y1, y2))) + 0.5 * step;
+    float max_y = ceil(max(y0, max(y1, y2))) - 0.5 * step;
 
-    SampleParams sp0 = SampleParams{to_uv(x0, y0),
-                                    to_uv(x0 + 1, y0),
-                                    to_uv(x0, y0 + 1),
-                                    psm, lsm};
-    SampleParams sp1 = SampleParams{to_uv(x1, y1),
-                                    to_uv(x1 + 1, y1),
-                                    to_uv(x1, y1 + 1),
-                                    psm, lsm};
-    SampleParams sp2 = SampleParams{to_uv(x2, y2),
-                                    to_uv(x2 + 1, y2),
-                                    to_uv(x2, y2 + 1),
-                                    psm, lsm};
-    Color c0 = tex.sample(sp0);
-    Color c1 = tex.sample(sp1);
-    Color c2 = tex.sample(sp2);
-
-    rasterize_interpolated_color_triangle(x0, y0, c0,
-                                          x1, y1, c1,
-                                          x2, y2, c2);
+    for (float x = min_x; x <= max_x; x += step) {
+      for (float y = min_y; y <= max_y; y += step) {
+        if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
+          Vector3D params = barycentric(x0, y0, x1, y1, x2, y2, x, y);
+          int i = (int) (x / step);
+          int j = (int) (y / step);
+          SampleParams sp = SampleParams{to_uv(x, y),
+                                          to_uv(x + 1, y),
+                                          to_uv(x, y + 1),
+                                          psm, lsm};
+          Color color = tex.sample(sp);
+          sample_buffer[j * width * sqrt(sample_rate) + i] = color;
+        }
+      }
+    }
   }
 
   void RasterizerImp::set_sample_rate(unsigned int rate) {
     // TODO: Task 2: You may want to update this function for supersampling support
-
     this->sample_rate = rate;
-
 
     this->sample_buffer.resize(width * height * rate, Color::White);
   }
@@ -218,7 +217,6 @@ namespace CGL {
     size_t width, size_t height)
   {
     // TODO: Task 2: You may want to update this function for supersampling support
-
     this->width = width;
     this->height = height;
     this->rgb_framebuffer_target = rgb_framebuffer;
