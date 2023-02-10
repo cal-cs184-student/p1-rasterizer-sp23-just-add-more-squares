@@ -20,22 +20,25 @@ namespace CGL {
         level = get_level(sp);
         switch (sp.psm) {
           case P_NEAREST:
-            return sample_nearest(sp.p_uv, (int) round(level));
-          case P_LINEAR: return sample_bilinear(sp.p_uv, (int) round(level));
+            return sample_nearest(sp.p_uv, (int) (level + 0.5));
+          case P_LINEAR: return sample_bilinear(sp.p_uv, (int) (level + 0.5));
         }
       case L_LINEAR:
         level = get_level(sp);
+        if (level < 0) {
+          level = 0;
+        }
         int level_down = (int) level;
         int level_up = (int) level + 1;
         float ratio = level - (float) level_down;
-        switch (sp.psm) {
-          case P_NEAREST:
-            return (1 - ratio) * sample_nearest(sp.p_uv, level_down)
-                   + ratio * sample_nearest(sp.p_uv, level_up);
-          case P_LINEAR:
-            return (1 - ratio) * sample_bilinear(sp.p_uv, level_down)
-                   + ratio * sample_bilinear(sp.p_uv, level_up);
-          default: return Color(1, 0, 1);
+        if (sp.psm == P_NEAREST) {
+          Color c0 = sample_nearest(sp.p_uv, level_down);
+          Color c1 = sample_nearest(sp.p_uv, level_up);
+          return c0 + ratio * (c1 + -1.0 * c0);
+        } else if (sp.psm == P_LINEAR) {
+          Color c0 = sample_bilinear(sp.p_uv, level_down);
+          Color c1 = sample_bilinear(sp.p_uv, level_up);
+          return c0 + ratio * (c1 + -1.0 * c0);
         }
     }
   }
@@ -56,19 +59,19 @@ namespace CGL {
     return Color(&texels[tx * 3 + ty * width * 3]);
   }
 
+  int clamp(int x, int max_x) {
+    return max(min(x, max_x), 0);
+  }
+
   Color Texture::sample_nearest(Vector2D uv, int level) {
     // TODO: Task 5: Fill this in.
 
     // return magenta for invalid level
-    if (level >= mipmap.size()) {
-      level = mipmap.size() - 1;
-    } else if (level < 0) {
-      level = 0;
-    }
+    level = clamp(level, mipmap.size() - 1);
     auto& mip = mipmap[level];
 
-    int x = min((int) round(mip.width * uv[0]), (int) mip.width - 1);
-    int y = min((int) round(mip.height * uv[1]), (int) mip.height - 1);
+    int x = clamp((int) (mip.width * uv[0] + 0.5), (int) mip.width - 1);
+    int y = clamp((int) (mip.height * uv[1] + 0.5), (int) mip.height - 1);
     return mip.get_texel(x, y);
   }
 
@@ -78,26 +81,22 @@ namespace CGL {
 
   Color Texture::sample_bilinear(Vector2D uv, int level) {
     // TODO: Task 5: Fill this in.
-    if (level >= mipmap.size()) {
-      level = mipmap.size() - 1;
-    } else if (level < 0) {
-      level = 0;
-    }
+    level = clamp(level, mipmap.size() - 1);
     auto& mip = mipmap[level];
 
     float s = mip.width * uv[0] - (int) (mip.width * uv[0]);
     float t = mip.height * uv[1] - (int) (mip.height * uv[1]);
-    int x00 = min((int) (mip.width * uv[0]), (int) mip.width - 1);
-    int y00 = min((int) (mip.height * uv[1]), (int) mip.height - 1);
+    int x00 = clamp((int) (mip.width * uv[0]), (int) mip.width - 1);
+    int y00 = clamp((int) (mip.height * uv[1]), (int) mip.height - 1);
     Color c00 = mip.get_texel(x00, y00);
-    int x01 = min((int) (mip.width * uv[0]), (int) mip.width - 1);
-    int y01 = min((int) (mip.height * uv[1]) + 1, (int) mip.height - 1);
+    int x01 = clamp((int) (mip.width * uv[0]), (int) mip.width - 1);
+    int y01 = clamp((int) (mip.height * uv[1]) + 1, (int) mip.height - 1);
     Color c01 = mip.get_texel(x01, y01);
-    int x10 = min((int) (mip.width * uv[0]) + 1, (int) mip.width - 1);
-    int y10 = min((int) (mip.height * uv[1]) + 1, (int) mip.height - 1);
+    int x10 = clamp((int) (mip.width * uv[0]) + 1, (int) mip.width - 1);
+    int y10 = clamp((int) (mip.height * uv[1]) + 1, (int) mip.height - 1);
     Color c10 = mip.get_texel(x10, y10);
-    int x11 = min((int) (mip.width * uv[0]) + 1, (int) mip.width - 1);
-    int y11 = min((int) (mip.height * uv[1]) + 1, (int) mip.height - 1);
+    int x11 = clamp((int) (mip.width * uv[0]) + 1, (int) mip.width - 1);
+    int y11 = clamp((int) (mip.height * uv[1]) + 1, (int) mip.height - 1);
     Color c11 = mip.get_texel(x11, y11);
 
     Color u0 = lerp(s, c00, c10);
