@@ -59,19 +59,15 @@ namespace CGL {
     return Color(&texels[tx * 3 + ty * width * 3]);
   }
 
-  int clamp(int x, int max_x) {
-    return max(min(x, max_x), 0);
-  }
-
   Color Texture::sample_nearest(Vector2D uv, int level) {
     // TODO: Task 5: Fill this in.
 
     // return magenta for invalid level
-    level = clamp(level, mipmap.size() - 1);
+    level = clamp(level, 0, (int) mipmap.size() - 1);
     auto& mip = mipmap[level];
 
-    int x = clamp((int) (mip.width * uv[0] + 0.5), (int) mip.width - 1);
-    int y = clamp((int) (mip.height * uv[1] + 0.5), (int) mip.height - 1);
+    int x = clamp((int) (mip.width * uv[0] + 0.5), 0, (int) mip.width - 1);
+    int y = clamp((int) (mip.height * uv[1] + 0.5), 0, (int) mip.height - 1);
     return mip.get_texel(x, y);
   }
 
@@ -81,22 +77,22 @@ namespace CGL {
 
   Color Texture::sample_bilinear(Vector2D uv, int level) {
     // TODO: Task 5: Fill this in.
-    level = clamp(level, mipmap.size() - 1);
+    level = clamp(level, 0, (int) mipmap.size() - 1);
     auto& mip = mipmap[level];
 
     float s = mip.width * uv[0] - (int) (mip.width * uv[0]);
     float t = mip.height * uv[1] - (int) (mip.height * uv[1]);
-    int x00 = clamp((int) (mip.width * uv[0]), (int) mip.width - 1);
-    int y00 = clamp((int) (mip.height * uv[1]), (int) mip.height - 1);
+    int x00 = clamp((int) (mip.width * uv[0]), 0, (int) mip.width - 1);
+    int y00 = clamp((int) (mip.height * uv[1]), 0, (int) mip.height - 1);
     Color c00 = mip.get_texel(x00, y00);
-    int x01 = clamp((int) (mip.width * uv[0]), (int) mip.width - 1);
-    int y01 = clamp((int) (mip.height * uv[1]) + 1, (int) mip.height - 1);
+    int x01 = clamp((int) (mip.width * uv[0]), 0, (int) mip.width - 1);
+    int y01 = clamp((int) (mip.height * uv[1]) + 1, 0, (int) mip.height - 1);
     Color c01 = mip.get_texel(x01, y01);
-    int x10 = clamp((int) (mip.width * uv[0]) + 1, (int) mip.width - 1);
-    int y10 = clamp((int) (mip.height * uv[1]) + 1, (int) mip.height - 1);
+    int x10 = clamp((int) (mip.width * uv[0]) + 1, 0, (int) mip.width - 1);
+    int y10 = clamp((int) (mip.height * uv[1]) + 1, 0, (int) mip.height - 1);
     Color c10 = mip.get_texel(x10, y10);
-    int x11 = clamp((int) (mip.width * uv[0]) + 1, (int) mip.width - 1);
-    int y11 = clamp((int) (mip.height * uv[1]) + 1, (int) mip.height - 1);
+    int x11 = clamp((int) (mip.width * uv[0]) + 1, 0, (int) mip.width - 1);
+    int y11 = clamp((int) (mip.height * uv[1]) + 1, 0, (int) mip.height - 1);
     Color c11 = mip.get_texel(x11, y11);
 
     Color u0 = lerp(s, c00, c10);

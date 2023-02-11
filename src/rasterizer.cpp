@@ -108,23 +108,37 @@ namespace CGL {
 //    }
 
     // TODO: Task 2: Update to implement super-sampled rasterization
+//    float step = 1.0 / sqrt(sample_rate);
+//    float min_x = floor(min(x0, min(x1, x2))) + 0.5 * step;
+//    float max_x = ceil(max(x0, max(x1, x2))) - 0.5 * step;
+//    float min_y = floor(min(y0, min(y1, y2))) + 0.5 * step;
+//    float max_y = ceil(max(y0, max(y1, y2))) - 0.5 * step;
+//
+//    for (float x = min_x; x <= max_x; x += step) {
+//      for (float y = min_y; y <= max_y; y += step) {
+//        if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
+//          int i = (int) (x / step);
+//          int j = (int) (y / step);
+//          sample_buffer[j * width * sqrt(sample_rate) + i] = color;
+//        }
+//      }
+//    }
+
     float step = 1.0 / sqrt(sample_rate);
-    float min_x = floor(min(x0, min(x1, x2))) + 0.5 * step;
-    float max_x = ceil(max(x0, max(x1, x2))) - 0.5 * step;
-    float min_y = floor(min(y0, min(y1, y2))) + 0.5 * step;
-    float max_y = ceil(max(y0, max(y1, y2))) - 0.5 * step;
+    float min_x = (int) min(x0, min(x1, x2)) + 0.5 * step;
+    float max_x = (int) (max(x0, max(x1, x2)) + 1) - 0.5 * step;
+    float min_y = (int) min(y0, min(y1, y2)) + 0.5 * step;
+    float max_y = (int) (max(y0, max(y1, y2)) + 1) - 0.5 * step;
 
     for (float x = min_x; x <= max_x; x += step) {
       for (float y = min_y; y <= max_y; y += step) {
         if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
-          int i = round((x - 0.5 * step) / step);
-          int j = round((y - 0.5 * step) / step);
+          int i = (int) (x / step);
+          int j = (int) (y / step);
           sample_buffer[j * width * sqrt(sample_rate) + i] = color;
         }
       }
     }
-
-
   }
 
     Vector3D barycentric(float x0, float y0,
@@ -142,19 +156,21 @@ namespace CGL {
     float x2, float y2, Color c2) {
     // TODO: Task 4: Rasterize the triangle, calculating barycentric coordinates and using them to interpolate vertex colors across the triangle
     // Hint: You can reuse code from rasterize_triangle
-    float step = 1.0 / sqrt(sample_rate);
-    float min_x = floor(min(x0, min(x1, x2))) + 0.5 * step;
-    float max_x = ceil(max(x0, max(x1, x2))) - 0.5 * step;
-    float min_y = floor(min(y0, min(y1, y2))) + 0.5 * step;
-    float max_y = ceil(max(y0, max(y1, y2))) - 0.5 * step;
+    int sample_rate_sqrt = sqrt(sample_rate);
+    float step = 1.0 / sample_rate_sqrt;
+    float min_x = (int) min(x0, min(x1, x2)) + 0.5 * step;
+    float max_x = (int) (max(x0, max(x1, x2)) + 1) - 0.5 * step;
+    float min_y = (int) min(y0, min(y1, y2)) + 0.5 * step;
+    float max_y = (int) (max(y0, max(y1, y2)) + 1) - 0.5 * step;
 
     for (float x = min_x; x <= max_x; x += step) {
       for (float y = min_y; y <= max_y; y += step) {
         if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
+          int i = clamp((int) (x / step), 0, (int) width * sample_rate_sqrt - 1);
+          int j = clamp((int) (y / step), 0, (int) height * sample_rate_sqrt - 1);
           Vector3D params = barycentric(x0, y0, x1, y1, x2, y2, x, y);
-          int i = round((x - 0.5 * step) / step);
-          int j = round((y - 0.5 * step) / step);
           Color color = params[0] * c0 + params[1] * c1 + params[2] * c2;
+          sample_buffer[j * width * sqrt(sample_rate) + i] = color;
           sample_buffer[j * width * sqrt(sample_rate) + i] = color;
         }
       }
@@ -182,22 +198,22 @@ namespace CGL {
       return uv0 * xy_barycentric[0] + uv1 * xy_barycentric[1] + uv2 * xy_barycentric[2];
     };
 
-    float step = 1.0 / sqrt(sample_rate);
-    float min_x = floor(min(x0, min(x1, x2))) + 0.5 * step;
-    float max_x = ceil(max(x0, max(x1, x2))) - 0.5 * step;
-    float min_y = floor(min(y0, min(y1, y2))) + 0.5 * step;
-    float max_y = ceil(max(y0, max(y1, y2))) - 0.5 * step;
+    int sample_rate_sqrt = sqrt(sample_rate);
+    float step = 1.0 / sample_rate_sqrt;
+    float min_x = (int) min(x0, min(x1, x2)) + 0.5 * step;
+    float max_x = (int) (max(x0, max(x1, x2)) + 1) - 0.5 * step;
+    float min_y = (int) min(y0, min(y1, y2)) + 0.5 * step;
+    float max_y = (int) (max(y0, max(y1, y2)) + 1) - 0.5 * step;
 
     for (float x = min_x; x <= max_x; x += step) {
       for (float y = min_y; y <= max_y; y += step) {
         if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
-          Vector3D params = barycentric(x0, y0, x1, y1, x2, y2, x, y);
-          int i = (int) (x / step);
-          int j = (int) (y / step);
+          int i = clamp((int) (x / step), 0, (int) width * sample_rate_sqrt - 1);
+          int j = clamp((int) (y / step), 0, (int) height * sample_rate_sqrt - 1);
           SampleParams sp = SampleParams{to_uv(x, y),
-                                          to_uv(x + 1, y),
-                                          to_uv(x, y + 1),
-                                          psm, lsm};
+                                         to_uv(x + 1, y),
+                                         to_uv(x, y + 1),
+                                         psm, lsm};
           Color color = tex.sample(sp);
           sample_buffer[j * width * sqrt(sample_rate) + i] = color;
         }
