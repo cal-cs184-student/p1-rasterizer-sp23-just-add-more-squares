@@ -259,7 +259,7 @@ namespace CGL {
 
   }
 
-  Rasterizer::~Rasterizer() { }
+  Rasterizer::~Rasterizer() = default;
 
 
 }// CGL

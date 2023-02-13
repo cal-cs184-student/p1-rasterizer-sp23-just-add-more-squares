@@ -1,5 +1,6 @@
 #include <string>
 #include <cstdlib>
+#define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
 
 using std::string;
 
