@@ -131,7 +131,7 @@ namespace CGL {
     float max_y = (int) (max(y0, max(y1, y2)) + 1) - 0.5 * step;
 
       // Change to 0 to disable jittering
-      const float JITTER_AMOUNT = 0.1A;
+      const float JITTER_AMOUNT = 0.1;
 
       auto jitter = [JITTER_AMOUNT](float x) {
           return x + ((rand() / (float) RAND_MAX) - 0.5) * JITTER_AMOUNT;
