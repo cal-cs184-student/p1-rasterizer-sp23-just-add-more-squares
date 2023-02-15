@@ -94,61 +94,22 @@ namespace CGL {
     float x2, float y2,
     Color color) {
     // TODO: Task 1: Implement basic triangle rasterization here, no supersampling
-//    float min_x = floor(min(x0, min(x1, x2))) + 0.5;
-//    float max_x = ceil(max(x0, max(x1, x2))) - 0.5;
-//    float min_y = floor(min(y0, min(y1, y2))) + 0.5;
-//    float max_y = ceil(max(y0, max(y1, y2))) - 0.5;
-//
-//    for (float x = min_x; x <= max_x; x++) {
-//      for (float y = min_y; y <= max_y; y++) {
-//        if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
-//          rasterize_point(x, y, color);
-//        }
-//      }
-//    }
-
     // TODO: Task 2: Update to implement super-sampled rasterization
-//    float step = 1.0 / sqrt(sample_rate);
-//    float min_x = floor(min(x0, min(x1, x2))) + 0.5 * step;
-//    float max_x = ceil(max(x0, max(x1, x2))) - 0.5 * step;
-//    float min_y = floor(min(y0, min(y1, y2))) + 0.5 * step;
-//    float max_y = ceil(max(y0, max(y1, y2))) - 0.5 * step;
-//
-//    for (float x = min_x; x <= max_x; x += step) {
-//      for (float y = min_y; y <= max_y; y += step) {
-//        if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
-//          int i = (int) (x / step);
-//          int j = (int) (y / step);
-//          sample_buffer[j * width * sqrt(sample_rate) + i] = color;
-//        }
-//      }
-//    }
-
     float step = 1.0 / sqrt(sample_rate);
     float min_x = (int) min(x0, min(x1, x2)) + 0.5 * step;
     float max_x = (int) (max(x0, max(x1, x2)) + 1) - 0.5 * step;
     float min_y = (int) min(y0, min(y1, y2)) + 0.5 * step;
     float max_y = (int) (max(y0, max(y1, y2)) + 1) - 0.5 * step;
 
-      // Change to 0 to disable jittering
-      const float JITTER_AMOUNT = 0.1;
-
-      auto jitter = [JITTER_AMOUNT](float x) {
-          return x + ((rand() / (float) RAND_MAX) - 0.5) * JITTER_AMOUNT;
-      };
-
-    for (float x = min_x - 1; x <= max_x; x += step) {
-      for (float y = min_y - 1; y <= max_y; y += step) {
-        float xj = jitter(x);
-        float yj = jitter(y);
-        if (inside_triangle(x0, y0, x1, y1, x2, y2, xj, yj)) {
+    for (float x = min_x; x <= max_x; x += step) {
+      for (float y = min_y; y <= max_y; y += step) {
+        if (inside_triangle(x0, y0, x1, y1, x2, y2, x, y)) {
           int i = (int) (x / step);
           int j = (int) (y / step);
           sample_buffer[j * width * sqrt(sample_rate) + i] = color;
         }
       }
     }
-
   }
 
     Vector3D barycentric(float x0, float y0,
@@ -158,7 +119,7 @@ namespace CGL {
       double alpha = (-(x - x1) * (y2 - y1) + (y - y1) * (x2 - x1)) / (-(x0 - x1) * (y2 - y1) + (y0 - y1) * (x2 - x1));
       double beta = (-(x - x2) * (y0 - y2) + (y - y2) * (x0 - x2)) / (-(x1 - x2) * (y0 - y2) + (y1 - y2) * (x0 - x2));
       double gamma = 1 - alpha - beta;
-      return {alpha, beta, gamma};
+      return Vector3D(alpha, beta, gamma);
     }
 
   void RasterizerImp::rasterize_interpolated_color_triangle(float x0, float y0, Color c0,
@@ -285,7 +246,7 @@ namespace CGL {
 
   }
 
-  Rasterizer::~Rasterizer() = default;
+  Rasterizer::~Rasterizer() { }
 
 
 }// CGL

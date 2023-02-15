@@ -63,9 +63,6 @@ namespace CGL {
     // TODO: Task 5: Fill this in.
 
     // return magenta for invalid level
-    if (level < 0 || level >= mipmap.size()) {
-        return Color(1, 0, 1);
-    }
     level = clamp(level, 0, (int) mipmap.size() - 1);
     auto& mip = mipmap[level];
 
